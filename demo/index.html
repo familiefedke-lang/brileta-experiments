@@ -101,6 +101,11 @@
     font-size: 0.6rem;
     color: #666;
   }
+  .timing {
+    font-size: 0.75rem;
+    color: #666;
+    font-family: monospace;
+  }
 </style>
 </head>
 <body>
@@ -116,6 +121,7 @@
   <label for="zoom">Zoom</label>
   <input type="range" id="zoom" min="1" max="8" value="4">
   <span class="zoom-label" id="zoom-label">4x</span>
+  <span class="timing" id="timing"></span>
 </div>
 
 <div class="section">
@@ -193,6 +199,7 @@ function generate() {
   const inputSeed = (parseInt(seedInput.value, 10) || 0) >>> 0;
   seedInput.value = String(inputSeed);
 
+  const t0 = performance.now();
   spriteData = SPRITE_TYPES.map(({ salt, count, gen }) => {
     const sprites = [];
     for (let i = 0; i < count; i++) {
@@ -203,6 +210,9 @@ function generate() {
     }
     return sprites;
   });
+  const ms = performance.now() - t0;
+  const total = SPRITE_TYPES.reduce((sum, t) => sum + t.count, 0);
+  document.getElementById('timing').textContent = `${total} sprites in ${Math.round(ms)} ms`;
 
   render();
 }
