@@ -326,11 +326,30 @@ export function nibbleCanopy(
   const np = clamp(nibbleProb, 0, 1);
   const ip = clamp(interiorProb, 0, 1);
 
+  // Precompute horizontal opaque span for each rim pixel so we can
+  // protect thin structures (trunks, branches) from nibbling.
+  const spanAtRim = new Uint8Array(h * w);
+  for (let row = 0; row < h; row++) {
+    for (let col = 0; col < w; col++) {
+      if (!rim[row * w + col]) continue;
+      let left = col;
+      while (left > 0 && data[(row * w + left - 1) * 4 + 3] > 128) left--;
+      let right = col;
+      while (right < w - 1 && data[(row * w + right + 1) * 4 + 3] > 128) right++;
+      spanAtRim[row * w + col] = Math.min(255, right - left + 1);
+    }
+  }
+
   // Phase 1: erase random rim pixels.
+  // Skip pixels in narrow spans (≤ 3px) to avoid severing trunks.
   let anyNibbled = false;
   for (let row = 0; row < h; row++) {
     for (let col = 0; col < w; col++) {
       if (!rim[row * w + col]) continue;
+      if (spanAtRim[row * w + col] <= 3) {
+        rng.nextFloat();  // Consume RNG to keep determinism.
+        continue;
+      }
       if (rng.nextFloat() < np) {
         data[(row * w + col) * 4 + 3] = 0;
         rim[row * w + col] = 2;  // Mark for interior pass.
@@ -340,6 +359,7 @@ export function nibbleCanopy(
   }
 
   // Phase 2: from nibbled pixels, step toward center and clear interior.
+  // Also protect thin spans from interior carving.
   if (anyNibbled && ip > 0) {
     for (let row = 0; row < h; row++) {
       for (let col = 0; col < w; col++) {
@@ -358,8 +378,15 @@ export function nibbleCanopy(
         const innerX = clamp(col + stepX, 0, w - 1);
         const innerY = clamp(row + stepY, 0, h - 1);
 
+        // Check span at the target pixel before carving.
         if (data[(innerY * w + innerX) * 4 + 3] > 128) {
-          data[(innerY * w + innerX) * 4 + 3] = 0;
+          let iLeft = innerX;
+          while (iLeft > 0 && data[(innerY * w + iLeft - 1) * 4 + 3] > 128) iLeft--;
+          let iRight = innerX;
+          while (iRight < w - 1 && data[(innerY * w + iRight + 1) * 4 + 3] > 128) iRight++;
+          if (iRight - iLeft + 1 > 3) {
+            data[(innerY * w + innerX) * 4 + 3] = 0;
+          }
         }
       }
     }
