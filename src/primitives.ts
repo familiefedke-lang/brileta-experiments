@@ -479,6 +479,63 @@ export function nibbleBoulder(
 }
 
 // ----------------------------------------------------------------
+// Rectangle drawing
+// ----------------------------------------------------------------
+
+/**
+ * Fill a solid axis-aligned rectangle with hard edges.
+ * Coordinates are rounded to the nearest pixel.
+ */
+export function fillRect(
+  canvas: Canvas,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  r: number,
+  g: number,
+  b: number,
+  a: number,
+): void {
+  const { width: w, height: h, data } = canvas;
+  const x0 = clamp(Math.round(x), 0, w - 1);
+  const y0 = clamp(Math.round(y), 0, h - 1);
+  const x1 = clamp(Math.round(x + width - 1), 0, w - 1);
+  const y1 = clamp(Math.round(y + height - 1), 0, h - 1);
+
+  for (let row = y0; row <= y1; row++) {
+    for (let col = x0; col <= x1; col++) {
+      const i = (row * w + col) * 4;
+      data[i] = r; data[i + 1] = g; data[i + 2] = b; data[i + 3] = a;
+    }
+  }
+}
+
+/**
+ * Draw the border of an axis-aligned rectangle.
+ * Uses fillRect for each of the four sides.
+ */
+export function strokeRect(
+  canvas: Canvas,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  r: number,
+  g: number,
+  b: number,
+  a: number,
+  thickness = 1,
+): void {
+  // Top and bottom full-width rows.
+  fillRect(canvas, x, y, width, thickness, r, g, b, a);
+  fillRect(canvas, x, y + height - thickness, width, thickness, r, g, b, a);
+  // Left and right sides, inset by thickness to avoid double-painting corners.
+  fillRect(canvas, x, y + thickness, thickness, height - thickness * 2, r, g, b, a);
+  fillRect(canvas, x + width - thickness, y + thickness, thickness, height - thickness * 2, r, g, b, a);
+}
+
+// ----------------------------------------------------------------
 // Line and triangle
 // ----------------------------------------------------------------
 
