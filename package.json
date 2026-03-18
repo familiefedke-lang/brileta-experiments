@@ -7,6 +7,7 @@
     "./rng": "./dist/rng.js",
     "./boulders": "./dist/boulders.js",
     "./machines": "./dist/machines.js",
+    "./props": "./dist/props.js",
     "./types": "./dist/types.js"
   },
   "scripts": {
