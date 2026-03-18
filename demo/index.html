@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>brileta-sprites</title>
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js" integrity="sha384-+mbV2IY1Zk/X1p/nWllGySJSUN8uMs+gUAN10Or95UBH0fpj6GfKgPmgC5EXieXG" crossorigin="anonymous"></script>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
@@ -84,12 +85,20 @@
   }
   .section { margin-bottom: 2rem; width: 100%; max-width: 900px; }
   .section h2 {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
     font-size: 1rem;
     font-weight: 500;
     color: #555;
     margin-bottom: 0.8rem;
     padding-bottom: 0.3rem;
     border-bottom: 1px solid #aaa;
+  }
+  .download-btn {
+    font-size: 0.75rem;
+    padding: 0.2rem 0.5rem;
+    flex-shrink: 0;
   }
   .grid {
     display: flex;
@@ -129,6 +138,7 @@
   <label for="zoom">Zoom</label>
   <input type="range" id="zoom" min="1" max="8" value="4">
   <span class="zoom-label" id="zoom-label">4x</span>
+  <button id="download-all">Download All</button>
   <span class="timing" id="timing"></span>
 </div>
 
@@ -206,17 +216,17 @@ import {
 } from '../dist/houses.js';
 
 const SPRITE_TYPES = [
-  { salt: 0, count: 30, gen: generateTree,          grid: document.getElementById('trees') },
-  { salt: 1, count: 20, gen: generateBoulder,       grid: document.getElementById('boulders') },
-  { salt: 2, count: 24, gen: generateMachine,       grid: document.getElementById('machines') },
-  { salt: 3, count: 20, gen: generateBush,          grid: document.getElementById('bushes') },
-  { salt: 4, count: 20, gen: generateFlowerBed,     grid: document.getElementById('flowerbeds') },
-  { salt: 5, count: 20, gen: generateMushroom,      grid: document.getElementById('mushrooms') },
-  { salt: 6, count: 20, gen: generateFenceSegment,  grid: document.getElementById('fences') },
-  { salt: 7, count: 20, gen: generateCampfire,      grid: document.getElementById('campfires') },
-  { salt: 8,  count: 20, gen: generateCrate,        grid: document.getElementById('crates') },
-  { salt: 9,  count: 20, gen: generateRooftop,      grid: document.getElementById('rooftops') },
-  { salt: 10, count: 20, gen: generateHouseSurface, grid: document.getElementById('housesurfaces') },
+  { salt: 0,  count: 30, name: 'tree',         gen: generateTree,          grid: document.getElementById('trees') },
+  { salt: 1,  count: 20, name: 'boulder',       gen: generateBoulder,       grid: document.getElementById('boulders') },
+  { salt: 2,  count: 24, name: 'machine',       gen: generateMachine,       grid: document.getElementById('machines') },
+  { salt: 3,  count: 20, name: 'bush',          gen: generateBush,          grid: document.getElementById('bushes') },
+  { salt: 4,  count: 20, name: 'flowerbed',     gen: generateFlowerBed,     grid: document.getElementById('flowerbeds') },
+  { salt: 5,  count: 20, name: 'mushroom',      gen: generateMushroom,      grid: document.getElementById('mushrooms') },
+  { salt: 6,  count: 20, name: 'fence',         gen: generateFenceSegment,  grid: document.getElementById('fences') },
+  { salt: 7,  count: 20, name: 'campfire',      gen: generateCampfire,      grid: document.getElementById('campfires') },
+  { salt: 8,  count: 20, name: 'crate',         gen: generateCrate,         grid: document.getElementById('crates') },
+  { salt: 9,  count: 20, name: 'rooftop',       gen: generateRooftop,       grid: document.getElementById('rooftops') },
+  { salt: 10, count: 20, name: 'housesurface',  gen: generateHouseSurface,  grid: document.getElementById('housesurfaces') },
 ];
 
 const seedInput = document.getElementById('seed');
@@ -317,8 +327,70 @@ zoomSlider.addEventListener('input', () => {
   }
 });
 
+// ---- Download helpers ----
+
+async function spriteToPngBlob(sprite) {
+  return sprite._oc.convertToBlob({ type: 'image/png' });
+}
+
+async function downloadCategory(name, sprites) {
+  const zip = new JSZip();
+  await Promise.all(sprites.map((sprite, i) => {
+    const nr = String(i + 1).padStart(2, '0');
+    return spriteToPngBlob(sprite).then(blob => zip.file(`${name}${nr}.png`, blob));
+  }));
+  const blob = await zip.generateAsync({ type: 'blob' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${name}.zip`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+async function downloadAll() {
+  const zip = new JSZip();
+  const promises = [];
+  SPRITE_TYPES.forEach(({ name }, ti) => {
+    spriteData[ti].forEach((sprite, i) => {
+      const nr = String(i + 1).padStart(2, '0');
+      promises.push(
+        spriteToPngBlob(sprite).then(blob => zip.file(`${name}${nr}.png`, blob))
+      );
+    });
+  });
+  await Promise.all(promises);
+  const blob = await zip.generateAsync({ type: 'blob' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'sprites.zip';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function setupDownloadButtons() {
+  SPRITE_TYPES.forEach(({ name, grid }, ti) => {
+    const section = grid.closest('.section');
+    const h2 = section.querySelector('h2');
+    if (h2.querySelector('.download-btn')) return;
+    const btn = document.createElement('button');
+    btn.className = 'download-btn';
+    btn.textContent = 'Download';
+    btn.addEventListener('click', () => downloadCategory(name, spriteData[ti]));
+    h2.appendChild(btn);
+  });
+}
+
+document.getElementById('download-all').addEventListener('click', downloadAll);
+
 seedInput.value = randomSeed();
 generate();
+setupDownloadButtons();
 </script>
 
 </body>
