@@ -177,6 +177,16 @@
   <div class="grid" id="crates"></div>
 </div>
 
+<div class="section">
+  <h2>Rooftops</h2>
+  <div class="grid" id="rooftops"></div>
+</div>
+
+<div class="section">
+  <h2>House Surfaces</h2>
+  <div class="grid" id="housesurfaces"></div>
+</div>
+
 <script type="module">
 import { Rng } from '../dist/rng.js';
 import { generateTree } from '../dist/trees.js';
@@ -190,6 +200,10 @@ import {
   generateCampfire,
   generateCrate,
 } from '../dist/props.js';
+import {
+  generateRooftop,
+  generateHouseSurface,
+} from '../dist/houses.js';
 
 const SPRITE_TYPES = [
   { salt: 0, count: 30, gen: generateTree,          grid: document.getElementById('trees') },
@@ -200,7 +214,9 @@ const SPRITE_TYPES = [
   { salt: 5, count: 20, gen: generateMushroom,      grid: document.getElementById('mushrooms') },
   { salt: 6, count: 20, gen: generateFenceSegment,  grid: document.getElementById('fences') },
   { salt: 7, count: 20, gen: generateCampfire,      grid: document.getElementById('campfires') },
-  { salt: 8, count: 20, gen: generateCrate,         grid: document.getElementById('crates') },
+  { salt: 8,  count: 20, gen: generateCrate,        grid: document.getElementById('crates') },
+  { salt: 9,  count: 20, gen: generateRooftop,      grid: document.getElementById('rooftops') },
+  { salt: 10, count: 20, gen: generateHouseSurface, grid: document.getElementById('housesurfaces') },
 ];
 
 const seedInput = document.getElementById('seed');
