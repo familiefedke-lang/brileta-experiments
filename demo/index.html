@@ -147,16 +147,60 @@
   <div class="grid" id="machines"></div>
 </div>
 
+<div class="section">
+  <h2>Bushes</h2>
+  <div class="grid" id="bushes"></div>
+</div>
+
+<div class="section">
+  <h2>Flower Beds</h2>
+  <div class="grid" id="flowerbeds"></div>
+</div>
+
+<div class="section">
+  <h2>Mushrooms</h2>
+  <div class="grid" id="mushrooms"></div>
+</div>
+
+<div class="section">
+  <h2>Fence Segments</h2>
+  <div class="grid" id="fences"></div>
+</div>
+
+<div class="section">
+  <h2>Campfires</h2>
+  <div class="grid" id="campfires"></div>
+</div>
+
+<div class="section">
+  <h2>Crates</h2>
+  <div class="grid" id="crates"></div>
+</div>
+
 <script type="module">
 import { Rng } from '../dist/rng.js';
 import { generateTree } from '../dist/trees.js';
 import { generateBoulder } from '../dist/boulders.js';
 import { generateMachine } from '../dist/machines.js';
+import {
+  generateBush,
+  generateFlowerBed,
+  generateMushroom,
+  generateFenceSegment,
+  generateCampfire,
+  generateCrate,
+} from '../dist/props.js';
 
 const SPRITE_TYPES = [
-  { salt: 0, count: 30, gen: generateTree,    grid: document.getElementById('trees') },
-  { salt: 1, count: 20, gen: generateBoulder, grid: document.getElementById('boulders') },
-  { salt: 2, count: 24, gen: generateMachine, grid: document.getElementById('machines') },
+  { salt: 0, count: 30, gen: generateTree,          grid: document.getElementById('trees') },
+  { salt: 1, count: 20, gen: generateBoulder,       grid: document.getElementById('boulders') },
+  { salt: 2, count: 24, gen: generateMachine,       grid: document.getElementById('machines') },
+  { salt: 3, count: 20, gen: generateBush,          grid: document.getElementById('bushes') },
+  { salt: 4, count: 20, gen: generateFlowerBed,     grid: document.getElementById('flowerbeds') },
+  { salt: 5, count: 20, gen: generateMushroom,      grid: document.getElementById('mushrooms') },
+  { salt: 6, count: 20, gen: generateFenceSegment,  grid: document.getElementById('fences') },
+  { salt: 7, count: 20, gen: generateCampfire,      grid: document.getElementById('campfires') },
+  { salt: 8, count: 20, gen: generateCrate,         grid: document.getElementById('crates') },
 ];
 
 const seedInput = document.getElementById('seed');
