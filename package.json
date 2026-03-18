@@ -8,6 +8,7 @@
     "./boulders": "./dist/boulders.js",
     "./machines": "./dist/machines.js",
     "./props": "./dist/props.js",
+    "./houses": "./dist/houses.js",
     "./types": "./dist/types.js"
   },
   "scripts": {

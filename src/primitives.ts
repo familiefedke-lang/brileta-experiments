@@ -536,6 +536,47 @@ export function strokeRect(
 }
 
 // ----------------------------------------------------------------
+// Parallelogram drawing
+// ----------------------------------------------------------------
+
+/**
+ * Fill a parallelogram whose bottom edge is aligned with (x, y+height-1)
+ * and top edge is shifted right by skewX pixels.
+ *
+ * Positive skewX shifts the top edge to the right, negative to the left.
+ * Useful for isometric or perspective roof panels and slanted wall faces.
+ */
+export function fillParallelogram(
+  canvas: Canvas,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  skewX: number,
+  r: number,
+  g: number,
+  b: number,
+  a: number,
+): void {
+  if (width <= 0 || height <= 0) return;
+  const { width: w, height: h, data } = canvas;
+  const y0 = Math.round(y);
+  const y1 = Math.round(y + height - 1);
+  for (let row = y0; row <= y1; row++) {
+    if (row < 0 || row >= h) continue;
+    // Interpolate skew: full skewX at top row, 0 at bottom row.
+    const t = (y1 === y0) ? 0 : (row - y0) / (y1 - y0);
+    const rowOffsetX = skewX * (1 - t);
+    const xStart = Math.max(0, Math.round(x + rowOffsetX));
+    const xEnd   = Math.min(w - 1, Math.round(x + rowOffsetX + width - 1));
+    for (let col = xStart; col <= xEnd; col++) {
+      const i = (row * w + col) * 4;
+      data[i] = r; data[i + 1] = g; data[i + 2] = b; data[i + 3] = a;
+    }
+  }
+}
+
+// ----------------------------------------------------------------
 // Line and triangle
 // ----------------------------------------------------------------
 
