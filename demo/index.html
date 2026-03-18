@@ -120,7 +120,7 @@
 <body>
 
 <h1>Brileta Sprite Generation</h1>
-<p class="subtitle">Procedural tree and boulder sprite generation. <a href="https://github.com/mayz/brileta-sprites">Source</a> · <a href="https://markshtat.com/notebook/every-spruce-is-sacred">How it works</a></p>
+<p class="subtitle">Procedural tree, boulder and machine sprite generation. <a href="https://github.com/mayz/brileta-sprites">Source</a> · <a href="https://markshtat.com/notebook/every-spruce-is-sacred">How it works</a></p>
 
 <div class="controls">
   <label for="seed">Seed</label>
@@ -142,14 +142,21 @@
   <div class="grid" id="boulders"></div>
 </div>
 
+<div class="section">
+  <h2>Machines</h2>
+  <div class="grid" id="machines"></div>
+</div>
+
 <script type="module">
 import { Rng } from '../dist/rng.js';
 import { generateTree } from '../dist/trees.js';
 import { generateBoulder } from '../dist/boulders.js';
+import { generateMachine } from '../dist/machines.js';
 
 const SPRITE_TYPES = [
   { salt: 0, count: 30, gen: generateTree,    grid: document.getElementById('trees') },
   { salt: 1, count: 20, gen: generateBoulder, grid: document.getElementById('boulders') },
+  { salt: 2, count: 24, gen: generateMachine, grid: document.getElementById('machines') },
 ];
 
 const seedInput = document.getElementById('seed');
