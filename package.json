@@ -10,7 +10,12 @@
     "./props": "./dist/props.js",
     "./houses": "./dist/houses.js",
     "./ground": "./dist/ground.js",
-    "./types": "./dist/types.js"
+    "./types": "./dist/types.js",
+    "./doors": "./dist/doors.js",
+    "./steelstructures": "./dist/steelstructures.js",
+    "./productionmachinery": "./dist/productionmachinery.js",
+    "./statuseffects": "./dist/statuseffects.js",
+    "./weaponeffects": "./dist/weaponeffects.js"
   },
   "scripts": {
     "build": "tsc",
