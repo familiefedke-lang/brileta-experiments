@@ -207,6 +207,31 @@
   <div class="grid" id="urbanprops"></div>
 </div>
 
+<div class="section">
+  <h2>Doors</h2>
+  <div class="grid" id="doors"></div>
+</div>
+
+<div class="section">
+  <h2>Steel Structures</h2>
+  <div class="grid" id="steelstructures"></div>
+</div>
+
+<div class="section">
+  <h2>Production Machinery</h2>
+  <div class="grid" id="productionmachinery"></div>
+</div>
+
+<div class="section">
+  <h2>Status Effects</h2>
+  <div class="grid" id="statuseffects"></div>
+</div>
+
+<div class="section">
+  <h2>Weapon Effects</h2>
+  <div class="grid" id="weaponeffects"></div>
+</div>
+
 <script type="module">
 import { Rng } from '../dist/rng.js';
 import { generateTree } from '../dist/trees.js';
@@ -226,6 +251,11 @@ import {
   generateHouseSurface,
 } from '../dist/houses.js';
 import { generateGroundTile } from '../dist/ground.js';
+import { generateDoor } from '../dist/doors.js';
+import { generateSteelStructure } from '../dist/steelstructures.js';
+import { generateProductionMachinery } from '../dist/productionmachinery.js';
+import { generateStatusEffect } from '../dist/statuseffects.js';
+import { generateWeaponEffect } from '../dist/weaponeffects.js';
 
 const SPRITE_TYPES = [
   { salt: 0,  count: 30, name: 'tree',         gen: generateTree,          grid: document.getElementById('trees') },
@@ -240,7 +270,12 @@ const SPRITE_TYPES = [
   { salt: 9,  count: 20, name: 'rooftop',       gen: generateRooftop,       grid: document.getElementById('rooftops') },
   { salt: 10, count: 20, name: 'housesurface',  gen: generateHouseSurface,  grid: document.getElementById('housesurfaces') },
   { salt: 11, count: 20, name: 'groundtile',    gen: generateGroundTile,    grid: document.getElementById('groundtiles') },
-  { salt: 12, count: 20, name: 'urbanprop',     gen: generateUrbanProp,     grid: document.getElementById('urbanprops') },
+  { salt: 12, count: 20, name: 'urbanprop',            gen: generateUrbanProp,            grid: document.getElementById('urbanprops') },
+  { salt: 13, count: 20, name: 'door',                 gen: generateDoor,                 grid: document.getElementById('doors') },
+  { salt: 14, count: 20, name: 'steelstructure',       gen: generateSteelStructure,       grid: document.getElementById('steelstructures') },
+  { salt: 15, count: 20, name: 'productionmachinery',  gen: generateProductionMachinery,  grid: document.getElementById('productionmachinery') },
+  { salt: 16, count: 20, name: 'statuseffect',         gen: generateStatusEffect,         grid: document.getElementById('statuseffects') },
+  { salt: 17, count: 20, name: 'weaponeffect',         gen: generateWeaponEffect,         grid: document.getElementById('weaponeffects') },
 ];
 
 const seedInput = document.getElementById('seed');
