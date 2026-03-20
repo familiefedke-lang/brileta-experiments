@@ -701,3 +701,275 @@ export function generateCrate(
   generateCrateSprite(canvas, actualSize, rng, archetype);
   return { canvas, archetype };
 }
+
+// ================================================================
+// Urban Prop
+// ================================================================
+
+export enum UrbanPropArchetype {
+  LITTER_BOX = 'litter_box',
+  TRASH_BAG  = 'trash_bag',
+  CAN        = 'can',
+  CARDBOARD  = 'cardboard',
+  DEBRIS     = 'debris',
+}
+
+function urbanPropArchetypeFromSeed(seed: number): UrbanPropArchetype {
+  const r = (seed >>> 0) % 5;
+  if (r === 0) return UrbanPropArchetype.LITTER_BOX;
+  if (r === 1) return UrbanPropArchetype.TRASH_BAG;
+  if (r === 2) return UrbanPropArchetype.CAN;
+  if (r === 3) return UrbanPropArchetype.CARDBOARD;
+  return UrbanPropArchetype.DEBRIS;
+}
+
+// ---- Litter box (public trash receptacle) ----
+
+const LITTER_BOX_BODY_COLORS: Color[] = [
+  [70, 100, 70],
+  [60, 90, 80],
+  [80, 80, 60],
+  [90, 90, 90],
+];
+
+function generateLitterBoxSprite(canvas: Canvas, w: number, h: number, rng: Rng): void {
+  const bodyBase  = jitterColor(rng, pick(rng, LITTER_BOX_BODY_COLORS), 10);
+  const bodyDark  = shiftColor(bodyBase, -35, -30, -25);
+  const bodyLight = shiftColor(bodyBase, 28, 24, 20);
+  const lidColor: Color  = [55, 55, 55];
+  const lidLight: Color  = [80, 80, 80];
+
+  const bx = Math.round(w * 0.15);
+  const by = Math.round(h * 0.18);
+  const bw = w - bx * 2;
+  const bh = h - by - Math.round(h * 0.05);
+
+  // Body
+  fillRect(canvas, bx, by, bw, bh, bodyBase[0], bodyBase[1], bodyBase[2], 255);
+  // Right shadow
+  fillRect(canvas, bx + bw - 2, by, 2, bh, bodyDark[0], bodyDark[1], bodyDark[2], 200);
+  // Bottom shadow
+  fillRect(canvas, bx, by + bh - 2, bw, 2, bodyDark[0], bodyDark[1], bodyDark[2], 200);
+  // Top/left highlight
+  fillRect(canvas, bx, by, bw, 1, bodyLight[0], bodyLight[1], bodyLight[2], 180);
+  fillRect(canvas, bx, by, 1, bh, bodyLight[0], bodyLight[1], bodyLight[2], 150);
+
+  // Lid / opening slot at top
+  fillRect(canvas, bx, by - Math.round(h * 0.08), bw, Math.round(h * 0.10), lidColor[0], lidColor[1], lidColor[2], 255);
+  fillRect(canvas, bx, by - Math.round(h * 0.08), bw, 1, lidLight[0], lidLight[1], lidLight[2], 200);
+
+  // Slot opening (dark rectangle on lid)
+  const slotW = Math.max(2, Math.round(bw * 0.45));
+  const slotX = bx + Math.round((bw - slotW) * 0.5);
+  fillRect(canvas, slotX, by - Math.round(h * 0.05), slotW, 2, 25, 25, 25, 230);
+
+  // Outer border
+  strokeRect(canvas, bx, by, bw, bh, bodyDark[0], bodyDark[1], bodyDark[2], 220, 1);
+}
+
+// ---- Trash bag ----
+
+const TRASH_BAG_COLORS: Color[] = [
+  [40, 40, 45],
+  [30, 30, 35],
+  [50, 45, 42],
+  [42, 42, 50],
+];
+
+function generateTrashBagSprite(canvas: Canvas, size: number, rng: Rng): void {
+  const bagBase  = jitterColor(rng, pick(rng, TRASH_BAG_COLORS), 8, [20, 20, 20], [75, 70, 68]);
+  const bagLight = shiftColor(bagBase, 28, 26, 22);
+  const bagDark  = shiftColor(bagBase, -12, -10, -8);
+  const tieColor: Color = [60, 55, 50];
+
+  const cx = size * 0.5;
+  const cy = size * 0.56;
+  const rx = size * rng.nextRange(0.28, 0.38);
+  const ry = size * rng.nextRange(0.24, 0.34);
+
+  // Bag body
+  stampEllipse(canvas, cx, cy, rx, ry, bagBase[0], bagBase[1], bagBase[2], 245, 2.0, 0.55);
+  // Highlight blob (upper-left)
+  stampEllipse(canvas, cx - rx * 0.28, cy - ry * 0.30, rx * 0.45, ry * 0.38, bagLight[0], bagLight[1], bagLight[2], 90, 1.5, 0.20);
+  // Shadow rim (lower-right)
+  stampEllipse(canvas, cx + rx * 0.22, cy + ry * 0.25, rx * 0.55, ry * 0.48, bagDark[0], bagDark[1], bagDark[2], 70, 1.5, 0.10);
+
+  // Tie / knot at top
+  const tieY = Math.round(cy - ry - 1);
+  const tieW = Math.max(2, Math.round(rx * 0.35));
+  fillRect(canvas, Math.round(cx - tieW / 2), tieY, tieW, 2, tieColor[0], tieColor[1], tieColor[2], 230);
+
+  darkenRim(canvas, 14, 12, 10);
+}
+
+// ---- Can ----
+
+const CAN_BODY_COLORS: Color[] = [
+  [190, 195, 200],   // plain aluminium
+  [220, 60, 55],     // red label
+  [55, 130, 210],    // blue label
+  [235, 185, 40],    // gold / yellow label
+];
+
+function generateCanSprite(canvas: Canvas, w: number, h: number, rng: Rng): void {
+  const bodyColor  = jitterColor(rng, pick(rng, CAN_BODY_COLORS), 12);
+  const bodyDark   = shiftColor(bodyColor, -45, -40, -35);
+  const bodyLight  = shiftColor(bodyColor, 40, 36, 30);
+  const metalColor: Color = [185, 188, 192];
+  const metalDark: Color  = [130, 132, 136];
+
+  const knocked = rng.nextFloat() > 0.5;
+
+  if (knocked) {
+    // Lying on its side – wide rectangle
+    const bx = Math.round(w * 0.06);
+    const by = Math.round(h * 0.28);
+    const bw = w - bx * 2;
+    const bh = Math.round(h * 0.44);
+
+    fillRect(canvas, bx, by, bw, bh, bodyColor[0], bodyColor[1], bodyColor[2], 255);
+    // Top/bottom metal caps
+    fillRect(canvas, bx,            by, 3, bh, metalColor[0], metalColor[1], metalColor[2], 230);
+    fillRect(canvas, bx + bw - 3,   by, 3, bh, metalColor[0], metalColor[1], metalColor[2], 210);
+    fillRect(canvas, bx,            by, 3, bh, metalDark[0],  metalDark[1],  metalDark[2],  80);
+    // Highlight stripe along top
+    fillRect(canvas, bx + 3, by, bw - 6, 2, bodyLight[0], bodyLight[1], bodyLight[2], 140);
+    // Shadow along bottom
+    fillRect(canvas, bx + 3, by + bh - 2, bw - 6, 2, bodyDark[0], bodyDark[1], bodyDark[2], 160);
+    strokeRect(canvas, bx, by, bw, bh, bodyDark[0], bodyDark[1], bodyDark[2], 200, 1);
+  } else {
+    // Standing upright – tall rectangle
+    const bx = Math.round(w * 0.22);
+    const by = Math.round(h * 0.06);
+    const bw = w - bx * 2;
+    const bh = h - by - Math.round(h * 0.05);
+
+    fillRect(canvas, bx, by, bw, bh, bodyColor[0], bodyColor[1], bodyColor[2], 255);
+    // Metal top / bottom caps
+    fillRect(canvas, bx, by,            bw, 3, metalColor[0], metalColor[1], metalColor[2], 230);
+    fillRect(canvas, bx, by + bh - 3,   bw, 3, metalColor[0], metalColor[1], metalColor[2], 210);
+    // Highlight left edge
+    fillRect(canvas, bx, by + 3, 2, bh - 6, bodyLight[0], bodyLight[1], bodyLight[2], 130);
+    // Shadow right edge
+    fillRect(canvas, bx + bw - 2, by + 3, 2, bh - 6, bodyDark[0], bodyDark[1], bodyDark[2], 150);
+    strokeRect(canvas, bx, by, bw, bh, bodyDark[0], bodyDark[1], bodyDark[2], 200, 1);
+  }
+}
+
+// ---- Cardboard / paper debris ----
+
+const CARDBOARD_COLORS: Color[] = [
+  [200, 168, 110],
+  [188, 156, 100],
+  [210, 178, 118],
+  [195, 162, 106],
+];
+
+function generateCardboardSprite(canvas: Canvas, w: number, h: number, rng: Rng): void {
+  const baseColor = jitterColor(rng, pick(rng, CARDBOARD_COLORS), 10, [150, 118, 72], [235, 200, 145]);
+  const dark      = shiftColor(baseColor, -40, -34, -22);
+  const light     = shiftColor(baseColor, 30, 25, 15);
+
+  const folded = rng.nextFloat() > 0.5;
+
+  if (folded) {
+    // Flattened folded box – two overlapping rectangles at a slight angle
+    const bx = Math.round(w * 0.06);
+    const by = Math.round(h * 0.22);
+    const bw = Math.round(w * 0.88);
+    const bh = Math.round(h * 0.56);
+
+    // Bottom panel
+    fillRect(canvas, bx, by, bw, bh, baseColor[0], baseColor[1], baseColor[2], 255);
+    // Fold crease
+    const cx2 = bx + Math.round(bw * 0.48);
+    drawLine(canvas, cx2, by, cx2, by + bh - 1, dark[0], dark[1], dark[2], 140, 1);
+    // Top/bottom edges
+    fillRect(canvas, bx, by, bw, 2, light[0], light[1], light[2], 160);
+    fillRect(canvas, bx, by + bh - 2, bw, 2, dark[0], dark[1], dark[2], 160);
+    // Corrugation hint lines
+    const corrCount = rng.nextInt(3, 6);
+    for (let i = 1; i < corrCount; i++) {
+      const ly = by + Math.round(i * bh / corrCount);
+      drawLine(canvas, bx, ly, bx + bw - 1, ly, dark[0], dark[1], dark[2], 50, 1);
+    }
+    strokeRect(canvas, bx, by, bw, bh, dark[0], dark[1], dark[2], 200, 1);
+  } else {
+    // Single torn piece / flap
+    const bx = Math.round(w * 0.08);
+    const by = Math.round(h * 0.18);
+    const bw = Math.round(w * 0.84);
+    const bh = Math.round(h * 0.64);
+    fillRect(canvas, bx, by, bw, bh, baseColor[0], baseColor[1], baseColor[2], 255);
+    fillRect(canvas, bx, by, bw, 1, light[0], light[1], light[2], 150);
+    fillRect(canvas, bx + bw - 1, by, 1, bh, dark[0], dark[1], dark[2], 130);
+    // Torn edge marks
+    const tearCount = rng.nextInt(2, 4);
+    for (let i = 0; i < tearCount; i++) {
+      const tx = bx + rng.nextInt(2, bw - 3);
+      fillRect(canvas, tx, by, 1, rng.nextInt(2, 5), dark[0], dark[1], dark[2], rng.nextInt(100, 180));
+    }
+    strokeRect(canvas, bx, by, bw, bh, dark[0], dark[1], dark[2], 180, 1);
+  }
+}
+
+// ---- Street debris scatter ----
+
+function generateDebrisSprite(canvas: Canvas, w: number, h: number, rng: Rng): void {
+  // Assorted tiny litter pieces scattered across the tile
+  const pieceCount = rng.nextInt(5, 10);
+  for (let i = 0; i < pieceCount; i++) {
+    const px = rng.nextInt(1, w - 3);
+    const py = rng.nextInt(1, h - 3);
+    const kind = rng.nextInt(0, 3);
+
+    if (kind === 0) {
+      // Paper scrap
+      const pw = rng.nextInt(2, 5);
+      const ph = rng.nextInt(1, 3);
+      fillRect(canvas, px, py, pw, ph, rng.nextInt(200, 240), rng.nextInt(190, 230), rng.nextInt(170, 210), rng.nextInt(180, 230));
+    } else if (kind === 1) {
+      // Small can / bottle – tiny rectangle
+      const pr = rng.nextInt(150, 230);
+      const pg = rng.nextInt(50, 180);
+      const pb = rng.nextInt(50, 180);
+      fillRect(canvas, px, py, 2, rng.nextInt(3, 5), pr, pg, pb, 220);
+    } else if (kind === 2) {
+      // Dark grime stain
+      stampEllipse(canvas, px, py, rng.nextRange(1.0, 3.5), rng.nextRange(0.8, 2.5), 45, 40, 35, rng.nextInt(80, 150), 1.5, 0.0);
+    } else {
+      // Cigarette butt / twig – short line
+      drawLine(canvas, px, py, px + rng.nextInt(2, 5), py + rng.nextInt(-1, 1), 185, 162, 120, rng.nextInt(160, 220), 1);
+    }
+  }
+}
+
+// ---- Urban prop dispatcher ----
+
+function generateUrbanPropSprite(
+  canvas: Canvas,
+  w: number,
+  h: number,
+  rng: Rng,
+  archetype: UrbanPropArchetype,
+): void {
+  switch (archetype) {
+    case UrbanPropArchetype.LITTER_BOX: generateLitterBoxSprite(canvas, w, h, rng); break;
+    case UrbanPropArchetype.TRASH_BAG:  generateTrashBagSprite(canvas, w, rng);     break;
+    case UrbanPropArchetype.CAN:        generateCanSprite(canvas, w, h, rng);       break;
+    case UrbanPropArchetype.CARDBOARD:  generateCardboardSprite(canvas, w, h, rng); break;
+    case UrbanPropArchetype.DEBRIS:     generateDebrisSprite(canvas, w, h, rng);    break;
+  }
+}
+
+export function generateUrbanProp(
+  seed: number,
+  size = 16,
+): { canvas: Canvas; archetype: UrbanPropArchetype } {
+  const archetype = urbanPropArchetypeFromSeed(seed);
+  const rng = new Rng(seed);
+  const actualSize = clamp(size + rng.nextInt(-2, 2), 12, 22);
+  const canvas = new Canvas(actualSize, actualSize);
+  generateUrbanPropSprite(canvas, actualSize, actualSize, rng, archetype);
+  return { canvas, archetype };
+}
