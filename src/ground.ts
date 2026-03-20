@@ -46,24 +46,28 @@ function shiftColor(base: Color, dr: number, dg: number, db: number): Color {
 // ================================================================
 
 export enum GroundArchetype {
-  SANDY    = 'sandy',
-  CHUNKY   = 'chunky',
-  WOODY    = 'woody',
-  MUDDY    = 'muddy',
-  GRAVELLY = 'gravelly',
-  LEAFY    = 'leafy',
-  TRASHY   = 'trashy',
+  SANDY       = 'sandy',
+  CHUNKY      = 'chunky',
+  WOODY       = 'woody',
+  MUDDY       = 'muddy',
+  GRAVELLY    = 'gravelly',
+  LEAFY       = 'leafy',
+  TRASHY      = 'trashy',
+  GRASSY_DARK  = 'grassy_dark',
+  GRASSY_LIGHT = 'grassy_light',
 }
 
 function groundArchetypeFromSeed(seed: number): GroundArchetype {
-  const r = (seed >>> 0) % 7;
+  const r = (seed >>> 0) % 9;
   if (r === 0) return GroundArchetype.SANDY;
   if (r === 1) return GroundArchetype.CHUNKY;
   if (r === 2) return GroundArchetype.WOODY;
   if (r === 3) return GroundArchetype.MUDDY;
   if (r === 4) return GroundArchetype.GRAVELLY;
   if (r === 5) return GroundArchetype.LEAFY;
-  return GroundArchetype.TRASHY;
+  if (r === 6) return GroundArchetype.TRASHY;
+  if (r === 7) return GroundArchetype.GRASSY_DARK;
+  return GroundArchetype.GRASSY_LIGHT;
 }
 
 // ----------------------------------------------------------------
@@ -117,6 +121,20 @@ const TRASHY_BASE: Color[] = [
   [108, 100, 90],
   [125, 118, 108],
   [115, 106, 96],
+];
+
+const GRASSY_DARK_BASE: Color[] = [
+  [35,  88, 30],
+  [30,  78, 25],
+  [42,  98, 36],
+  [38,  85, 32],
+];
+
+const GRASSY_LIGHT_BASE: Color[] = [
+  [78,  148, 52],
+  [68,  135, 44],
+  [88,  160, 60],
+  [82,  152, 56],
 ];
 
 // ----------------------------------------------------------------
@@ -446,6 +464,72 @@ function generateTrashy(canvas: Canvas, w: number, h: number, rng: Rng): void {
 // Main generator dispatcher
 // ----------------------------------------------------------------
 
+function generateGrassyDark(canvas: Canvas, w: number, h: number, rng: Rng): void {
+  const base  = jitterColor(rng, pick(rng, GRASSY_DARK_BASE), 6, [20, 60, 16], [60, 118, 50]);
+  const dark  = shiftColor(base, -18, -22, -10);
+  const light = shiftColor(base,  18,  24,  10);
+
+  // Solid base fill
+  fillRect(canvas, 0, 0, w, h, base[0], base[1], base[2], 255);
+
+  // A few broad, soft patches for gentle tonal variation
+  const patchCount = rng.nextInt(3, 5);
+  for (let i = 0; i < patchCount; i++) {
+    const px  = rng.nextInt(0, w);
+    const py  = rng.nextInt(0, h);
+    const prx = rng.nextRange(w * 0.20, w * 0.40);
+    const pry = rng.nextRange(h * 0.18, h * 0.36);
+    const pc  = rng.nextFloat() > 0.5 ? dark : light;
+    stampEllipse(canvas, px, py, prx, pry, pc[0], pc[1], pc[2], rng.nextInt(28, 55), 1.2, 0.0);
+  }
+
+  // Light speckle (restrained – only a handful of pixels)
+  const speckleCount = rng.nextInt(6, 14);
+  for (let i = 0; i < speckleCount; i++) {
+    const sx = rng.nextInt(0, w - 1);
+    const sy = rng.nextInt(0, h - 1);
+    const sc = rng.nextFloat() > 0.5 ? light : dark;
+    const idx = (sy * w + sx) * 4;
+    canvas.data[idx]     = sc[0];
+    canvas.data[idx + 1] = sc[1];
+    canvas.data[idx + 2] = sc[2];
+    canvas.data[idx + 3] = rng.nextInt(50, 110);
+  }
+}
+
+function generateGrassyLight(canvas: Canvas, w: number, h: number, rng: Rng): void {
+  const base  = jitterColor(rng, pick(rng, GRASSY_LIGHT_BASE), 8, [50, 110, 30], [118, 185, 80]);
+  const dark  = shiftColor(base, -20, -26, -12);
+  const light = shiftColor(base,  20,  28,  14);
+
+  // Solid base fill
+  fillRect(canvas, 0, 0, w, h, base[0], base[1], base[2], 255);
+
+  // Broad soft patches
+  const patchCount = rng.nextInt(3, 5);
+  for (let i = 0; i < patchCount; i++) {
+    const px  = rng.nextInt(0, w);
+    const py  = rng.nextInt(0, h);
+    const prx = rng.nextRange(w * 0.18, w * 0.38);
+    const pry = rng.nextRange(h * 0.16, h * 0.34);
+    const pc  = rng.nextFloat() > 0.5 ? dark : light;
+    stampEllipse(canvas, px, py, prx, pry, pc[0], pc[1], pc[2], rng.nextInt(25, 50), 1.2, 0.0);
+  }
+
+  // Very light speckling
+  const speckleCount = rng.nextInt(6, 14);
+  for (let i = 0; i < speckleCount; i++) {
+    const sx = rng.nextInt(0, w - 1);
+    const sy = rng.nextInt(0, h - 1);
+    const sc = rng.nextFloat() > 0.6 ? light : dark;
+    const idx = (sy * w + sx) * 4;
+    canvas.data[idx]     = sc[0];
+    canvas.data[idx + 1] = sc[1];
+    canvas.data[idx + 2] = sc[2];
+    canvas.data[idx + 3] = rng.nextInt(45, 100);
+  }
+}
+
 function generateGroundSprite(
   canvas: Canvas,
   w: number,
@@ -454,13 +538,15 @@ function generateGroundSprite(
   archetype: GroundArchetype,
 ): void {
   switch (archetype) {
-    case GroundArchetype.SANDY:    generateSandy(canvas, w, h, rng);    break;
-    case GroundArchetype.CHUNKY:   generateChunky(canvas, w, h, rng);   break;
-    case GroundArchetype.WOODY:    generateWoody(canvas, w, h, rng);    break;
-    case GroundArchetype.MUDDY:    generateMuddy(canvas, w, h, rng);    break;
-    case GroundArchetype.GRAVELLY: generateGravelly(canvas, w, h, rng); break;
-    case GroundArchetype.LEAFY:    generateLeafy(canvas, w, h, rng);    break;
-    case GroundArchetype.TRASHY:   generateTrashy(canvas, w, h, rng);   break;
+    case GroundArchetype.SANDY:        generateSandy(canvas, w, h, rng);        break;
+    case GroundArchetype.CHUNKY:       generateChunky(canvas, w, h, rng);       break;
+    case GroundArchetype.WOODY:        generateWoody(canvas, w, h, rng);        break;
+    case GroundArchetype.MUDDY:        generateMuddy(canvas, w, h, rng);        break;
+    case GroundArchetype.GRAVELLY:     generateGravelly(canvas, w, h, rng);     break;
+    case GroundArchetype.LEAFY:        generateLeafy(canvas, w, h, rng);        break;
+    case GroundArchetype.TRASHY:       generateTrashy(canvas, w, h, rng);       break;
+    case GroundArchetype.GRASSY_DARK:  generateGrassyDark(canvas, w, h, rng);  break;
+    case GroundArchetype.GRASSY_LIGHT: generateGrassyLight(canvas, w, h, rng); break;
   }
 }
 
