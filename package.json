@@ -9,6 +9,7 @@
     "./machines": "./dist/machines.js",
     "./props": "./dist/props.js",
     "./houses": "./dist/houses.js",
+    "./ground": "./dist/ground.js",
     "./types": "./dist/types.js"
   },
   "scripts": {
