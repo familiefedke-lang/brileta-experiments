@@ -15,7 +15,8 @@
     "./steelstructures": "./dist/steelstructures.js",
     "./productionmachinery": "./dist/productionmachinery.js",
     "./statuseffects": "./dist/statuseffects.js",
-    "./weaponeffects": "./dist/weaponeffects.js"
+    "./weaponeffects": "./dist/weaponeffects.js",
+    "./decor": "./dist/decor.js"
   },
   "scripts": {
     "build": "tsc",

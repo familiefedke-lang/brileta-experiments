@@ -1,0 +1,764 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sprite Editor — brileta</title>
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js" integrity="sha384-+mbV2IY1Zk/X1p/nWllGySJSUN8uMs+gUAN10Or95UBH0fpj6GfKgPmgC5EXieXG" crossorigin="anonymous"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html, body {
+    height: 100%;
+    font-family: system-ui, -apple-system, sans-serif;
+    color: #333;
+    background: #ddd;
+  }
+
+  .layout {
+    display: flex;
+    height: 100vh;
+    min-height: 0;
+  }
+
+  /* ---- Sidebar ---- */
+  .sidebar {
+    width: 300px;
+    flex-shrink: 0;
+    background: #fff;
+    border-right: 1px solid #bbb;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+
+  .sidebar-inner {
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+  }
+
+  .sidebar-header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    border-bottom: 1px solid #ddd;
+    padding-bottom: 0.75rem;
+  }
+
+  .sidebar-header h1 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #111;
+  }
+
+  .sidebar-header a {
+    font-size: 0.8rem;
+    color: #666;
+    text-decoration: none;
+    border-bottom: 1px solid #bbb;
+  }
+  .sidebar-header a:hover { color: #333; border-bottom-color: #666; }
+
+  .ctrl-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+
+  .ctrl-label {
+    font-size: 0.72rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #666;
+  }
+
+  .ctrl-row {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+  }
+
+  select, input[type="number"] {
+    background: #fff;
+    border: 1px solid #bbb;
+    color: #222;
+    padding: 0.35rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    font-family: inherit;
+  }
+  select { width: 100%; }
+  select:focus, input[type="number"]:focus { outline: none; border-color: #888; }
+
+  input[type="number"] {
+    width: 100%;
+    flex: 1;
+    min-width: 0;
+  }
+
+  input[type="range"] {
+    flex: 1;
+    accent-color: #666;
+    min-width: 0;
+  }
+
+  .range-val {
+    font-size: 0.8rem;
+    color: #555;
+    min-width: 2rem;
+    text-align: right;
+  }
+
+  button {
+    background: #fff;
+    border: 1px solid #bbb;
+    color: #333;
+    padding: 0.35rem 0.6rem;
+    border-radius: 4px;
+    font-size: 0.82rem;
+    cursor: pointer;
+    white-space: nowrap;
+    font-family: inherit;
+  }
+  button:hover { background: #f0f0f0; border-color: #888; color: #111; }
+  button:active { background: #e0e0e0; }
+
+  .btn-icon { font-size: 1rem; line-height: 1; }
+
+  .btn-wide {
+    width: 100%;
+    padding: 0.45rem;
+    font-size: 0.85rem;
+  }
+
+  .color-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 0.3rem;
+  }
+
+  input[type="checkbox"] {
+    accent-color: #666;
+    cursor: pointer;
+  }
+
+  input[type="color"] {
+    border: 1px solid #bbb;
+    border-radius: 4px;
+    width: 2.2rem;
+    height: 1.8rem;
+    padding: 0.1rem;
+    cursor: pointer;
+    background: #fff;
+  }
+
+  .info-block {
+    font-size: 0.8rem;
+    color: #555;
+    line-height: 1.7;
+  }
+  .info-block span {
+    color: #222;
+    font-weight: 500;
+  }
+
+  .hidden { display: none !important; }
+
+  /* ---- Main preview area ---- */
+  .main {
+    flex: 1;
+    min-width: 0;
+    overflow: auto;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 1.5rem;
+    /* checkered transparency pattern */
+    background-color: #ccc;
+    background-image:
+      linear-gradient(45deg, #b8b8b8 25%, transparent 25%),
+      linear-gradient(-45deg, #b8b8b8 25%, transparent 25%),
+      linear-gradient(45deg, transparent 75%, #b8b8b8 75%),
+      linear-gradient(-45deg, transparent 75%, #b8b8b8 75%);
+    background-size: 16px 16px;
+    background-position: 0 0, 0 8px, 8px -8px, -8px 0px;
+  }
+
+  .preview-area {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  /* Single sprite */
+  #single-preview {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.4rem;
+  }
+
+  #single-canvas {
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+    display: block;
+  }
+
+  #single-label {
+    font-size: 0.75rem;
+    color: #222;
+    background: rgba(255,255,255,0.75);
+    padding: 0.1rem 0.4rem;
+    border-radius: 3px;
+  }
+
+  /* Batch grid */
+  #batch-preview {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .batch-row {
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  .batch-cell {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.15rem;
+  }
+
+  .batch-cell canvas {
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+    display: block;
+  }
+
+  .batch-cell .cell-label {
+    font-size: 0.55rem;
+    color: #222;
+    background: rgba(255,255,255,0.75);
+    padding: 0.05rem 0.3rem;
+    border-radius: 2px;
+    white-space: nowrap;
+  }
+</style>
+</head>
+<body>
+
+<div class="layout">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <div class="sidebar-header">
+        <h1>Sprite Editor</h1>
+        <a href="index.html">← Gallery</a>
+      </div>
+
+      <!-- Type -->
+      <div class="ctrl-group">
+        <div class="ctrl-label">Type</div>
+        <select id="sprite-type">
+          <optgroup label="Nature">
+            <option value="tree">Tree</option>
+            <option value="boulder">Boulder</option>
+            <option value="bush">Bush</option>
+            <option value="mushroom">Mushroom</option>
+          </optgroup>
+          <optgroup label="Structures">
+            <option value="housesurface">House Surface</option>
+            <option value="rooftop">Rooftop</option>
+            <option value="door">Door</option>
+            <option value="steelstructure">Steel Structure</option>
+            <option value="ruins">Ruins</option>
+          </optgroup>
+          <optgroup label="Props">
+            <option value="campfire">Campfire</option>
+            <option value="crate">Crate</option>
+            <option value="fence">Fence Segment</option>
+            <option value="urbanprop">Urban Prop</option>
+            <option value="flowerbed">Flower Bed</option>
+          </optgroup>
+          <optgroup label="Effects">
+            <option value="statuseffect">Status Effect</option>
+            <option value="weaponeffect">Weapon Effect</option>
+          </optgroup>
+          <optgroup label="Industrial">
+            <option value="machine">Machine</option>
+            <option value="productionmachinery">Production Machinery</option>
+            <option value="groundtile">Ground Tile</option>
+          </optgroup>
+          <optgroup label="Decor">
+            <option value="crystal">Crystal</option>
+            <option value="potion">Potion</option>
+          </optgroup>
+        </select>
+      </div>
+
+      <!-- Seed -->
+      <div class="ctrl-group">
+        <div class="ctrl-label">Seed</div>
+        <div class="ctrl-row">
+          <input type="number" id="seed" min="0" max="4294967295" value="0">
+        </div>
+        <div class="ctrl-row">
+          <button id="btn-random" title="Random seed"><span class="btn-icon">⟳</span> Random</button>
+          <button id="btn-prev" title="Previous seed">‹</button>
+          <button id="btn-next" title="Next seed">›</button>
+        </div>
+      </div>
+
+      <!-- Size -->
+      <div class="ctrl-group">
+        <div class="ctrl-label">Size <span class="range-val" id="size-val">16</span></div>
+        <div class="ctrl-row">
+          <input type="range" id="size" min="10" max="36" value="16">
+        </div>
+      </div>
+
+      <!-- Zoom -->
+      <div class="ctrl-group">
+        <div class="ctrl-label">Zoom <span class="range-val" id="zoom-val">8×</span></div>
+        <div class="ctrl-row">
+          <input type="range" id="zoom" min="2" max="12" value="8">
+        </div>
+      </div>
+
+      <!-- Archetype override (decor only) -->
+      <div class="ctrl-group" id="archetype-group">
+        <div class="ctrl-label">Archetype</div>
+        <select id="archetype-override">
+          <option value="auto">auto</option>
+        </select>
+      </div>
+
+      <!-- Color override (decor only) -->
+      <div class="ctrl-group" id="color-group">
+        <div class="ctrl-label">Color Override</div>
+        <div class="ctrl-row">
+          <input type="checkbox" id="color-override-enabled">
+          <label for="color-override-enabled" style="font-size:0.85rem;cursor:pointer;">Custom Color</label>
+        </div>
+        <div class="color-row" id="color-picker-row" style="display:none;">
+          <label for="base-color" style="font-size:0.82rem;color:#555;">Base Color</label>
+          <input type="color" id="base-color" value="#3264c8">
+        </div>
+      </div>
+
+      <!-- Batch preview -->
+      <div class="ctrl-group">
+        <div class="ctrl-label">Batch Preview</div>
+        <div class="ctrl-row">
+          <input type="checkbox" id="show-batch" checked>
+          <label for="show-batch" style="font-size:0.85rem;cursor:pointer;">Show 5×4 grid</label>
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div class="ctrl-group">
+        <div class="ctrl-label">Actions</div>
+        <button class="btn-wide" id="btn-export">⬇ Export PNG</button>
+        <button class="btn-wide" id="btn-export-batch" style="margin-top:0.3rem;">⬇ Export All (ZIP)</button>
+      </div>
+
+      <!-- Info -->
+      <div class="ctrl-group">
+        <div class="ctrl-label">Info</div>
+        <div class="info-block">
+          Archetype: <span id="archetype-result">—</span><br>
+          Size: <span id="size-result">—</span>
+        </div>
+      </div>
+
+    </div>
+  </aside>
+
+  <!-- Main preview area -->
+  <main class="main">
+    <div class="preview-area">
+      <div id="single-preview">
+        <canvas id="single-canvas"></canvas>
+        <div id="single-label"></div>
+      </div>
+      <div id="batch-preview" class="hidden">
+        <!-- rows injected by JS -->
+      </div>
+    </div>
+  </main>
+</div>
+
+<script type="module">
+import { Rng } from '../dist/rng.js';
+import { generateTree } from '../dist/trees.js';
+import { generateBoulder } from '../dist/boulders.js';
+import { generateMachine } from '../dist/machines.js';
+import {
+  generateBush,
+  generateFlowerBed,
+  generateMushroom,
+  generateFenceSegment,
+  generateCampfire,
+  generateCrate,
+  generateUrbanProp,
+} from '../dist/props.js';
+import { generateRooftop, generateHouseSurface } from '../dist/houses.js';
+import { generateGroundTile } from '../dist/ground.js';
+import { generateDoor } from '../dist/doors.js';
+import { generateSteelStructure } from '../dist/steelstructures.js';
+import { generateProductionMachinery } from '../dist/productionmachinery.js';
+import { generateStatusEffect } from '../dist/statuseffects.js';
+import { generateWeaponEffect } from '../dist/weaponeffects.js';
+import { generateCrystal, generatePotion, generateRuins } from '../dist/decor.js';
+
+// ---- Type registry ----
+const TYPE_SALT = {
+  tree: 0, boulder: 1, machine: 2, bush: 3, flowerbed: 4, mushroom: 5,
+  fence: 6, campfire: 7, crate: 8, rooftop: 9, housesurface: 10,
+  groundtile: 11, urbanprop: 12, door: 13, steelstructure: 14,
+  productionmachinery: 15, statuseffect: 16, weaponeffect: 17,
+  crystal: 18, potion: 19, ruins: 20,
+};
+
+const GENERATORS = {
+  tree: generateTree,
+  boulder: generateBoulder,
+  machine: generateMachine,
+  bush: generateBush,
+  flowerbed: generateFlowerBed,
+  mushroom: generateMushroom,
+  fence: generateFenceSegment,
+  campfire: generateCampfire,
+  crate: generateCrate,
+  rooftop: generateRooftop,
+  housesurface: generateHouseSurface,
+  groundtile: generateGroundTile,
+  urbanprop: generateUrbanProp,
+  door: generateDoor,
+  steelstructure: generateSteelStructure,
+  productionmachinery: generateProductionMachinery,
+  statuseffect: generateStatusEffect,
+  weaponeffect: generateWeaponEffect,
+  crystal: generateCrystal,
+  potion: generatePotion,
+  ruins: generateRuins,
+};
+
+const DECOR_ARCHETYPES = {
+  crystal: ['auto', 'shard', 'cluster', 'geode'],
+  potion:  ['auto', 'round', 'vial', 'flask'],
+  ruins:   ['auto', 'pillar', 'wall-chunk', 'arch-piece'],
+};
+
+// Decor color option key per type
+const DECOR_COLOR_KEY = {
+  crystal: 'baseColor',
+  potion:  'liquidColor',
+  ruins:   'stoneColor',
+};
+
+const DECOR_TYPES = new Set(['crystal', 'potion', 'ruins']);
+
+const BATCH_COLS = 5;
+const BATCH_ROWS = 4;
+const BATCH_COUNT = BATCH_COLS * BATCH_ROWS;
+
+// ---- DOM refs ----
+const elType        = document.getElementById('sprite-type');
+const elSeed        = document.getElementById('seed');
+const elSize        = document.getElementById('size');
+const elSizeVal     = document.getElementById('size-val');
+const elZoom        = document.getElementById('zoom');
+const elZoomVal     = document.getElementById('zoom-val');
+const elArchGroup   = document.getElementById('archetype-group');
+const elArchSel     = document.getElementById('archetype-override');
+const elColorGroup  = document.getElementById('color-group');
+const elColorCheck  = document.getElementById('color-override-enabled');
+const elColorRow    = document.getElementById('color-picker-row');
+const elBaseColor   = document.getElementById('base-color');
+const elShowBatch   = document.getElementById('show-batch');
+const elBtnExport   = document.getElementById('btn-export');
+const elBtnExportZ  = document.getElementById('btn-export-batch');
+const elArchResult  = document.getElementById('archetype-result');
+const elSizeResult  = document.getElementById('size-result');
+const elSinglePrev  = document.getElementById('single-preview');
+const elSingleCanvas = document.getElementById('single-canvas');
+const elSingleLabel = document.getElementById('single-label');
+const elBatchPrev   = document.getElementById('batch-preview');
+
+// ---- Helpers ----
+function hexToRgb(hex) {
+  const n = parseInt(hex.slice(1), 16);
+  return [(n >> 16) & 0xff, (n >> 8) & 0xff, n & 0xff];
+}
+
+function getSeed() {
+  return (parseInt(elSeed.value, 10) || 0) >>> 0;
+}
+
+function getSize() {
+  return parseInt(elSize.value, 10);
+}
+
+function getZoom() {
+  return parseInt(elZoom.value, 10);
+}
+
+function getOptions(type) {
+  if (!DECOR_TYPES.has(type)) return undefined;
+  const archVal = elArchSel.value;
+  const colorEnabled = elColorCheck.checked;
+  if (archVal === 'auto' && !colorEnabled) return undefined;
+  const opts = {};
+  if (archVal !== 'auto') opts.archetype = archVal;
+  if (colorEnabled) opts[DECOR_COLOR_KEY[type]] = hexToRgb(elBaseColor.value);
+  return opts;
+}
+
+function callGenerator(type, seed, size) {
+  const gen = GENERATORS[type];
+  const opts = getOptions(type);
+  if (opts !== undefined) return gen(seed, size, opts);
+  return gen(seed, size);
+}
+
+function bakeOffscreen(sprite) {
+  const { width: w, height: h, data } = sprite.canvas;
+  const imgData = new ImageData(new Uint8ClampedArray(data), w, h);
+  const oc = new OffscreenCanvas(w, h);
+  oc.getContext('2d').putImageData(imgData, 0, 0);
+  sprite._oc = oc;
+  return sprite;
+}
+
+function blitToCanvas(sprite, canvasEl, zoom) {
+  const w = sprite.canvas.width;
+  const h = sprite.canvas.height;
+  canvasEl.width  = w * zoom;
+  canvasEl.height = h * zoom;
+  const ctx = canvasEl.getContext('2d');
+  ctx.imageSmoothingEnabled = false;
+  ctx.drawImage(sprite._oc, 0, 0, w * zoom, h * zoom);
+}
+
+// ---- State ----
+let singleSprite = null;
+let batchSprites = [];
+
+// ---- Generation ----
+function generate() {
+  const type = elType.value;
+  const seed = getSeed();
+  const size = getSize();
+  const zoom = getZoom();
+  const salt = TYPE_SALT[type];
+
+  // Single sprite (seed as-is)
+  singleSprite = bakeOffscreen(callGenerator(type, seed, size));
+
+  // Batch sprites
+  batchSprites = [];
+  for (let i = 0; i < BATCH_COUNT; i++) {
+    const bSeed = Rng.deriveSpatialSeed(i, 0, seed, salt);
+    batchSprites.push(bakeOffscreen(callGenerator(type, bSeed, size)));
+  }
+
+  render(zoom);
+  updateInfo();
+}
+
+function render(zoom) {
+  const batch = elShowBatch.checked;
+
+  if (batch) {
+    elSinglePrev.classList.add('hidden');
+    elBatchPrev.classList.remove('hidden');
+    renderBatch(zoom);
+  } else {
+    elBatchPrev.classList.add('hidden');
+    elSinglePrev.classList.remove('hidden');
+    blitToCanvas(singleSprite, elSingleCanvas, zoom);
+    elSingleLabel.textContent = singleSprite.archetype;
+  }
+}
+
+function renderBatch(zoom) {
+  // Build/reuse rows
+  const needed = BATCH_ROWS;
+  while (elBatchPrev.children.length > needed) elBatchPrev.lastChild.remove();
+  while (elBatchPrev.children.length < needed) {
+    const row = document.createElement('div');
+    row.className = 'batch-row';
+    elBatchPrev.appendChild(row);
+  }
+
+  let idx = 0;
+  for (let r = 0; r < BATCH_ROWS; r++) {
+    const row = elBatchPrev.children[r];
+    while (row.children.length > BATCH_COLS) row.lastChild.remove();
+    while (row.children.length < BATCH_COLS) {
+      const cell = document.createElement('div');
+      cell.className = 'batch-cell';
+      const cvs = document.createElement('canvas');
+      const lbl = document.createElement('div');
+      lbl.className = 'cell-label';
+      cell.appendChild(cvs);
+      cell.appendChild(lbl);
+      row.appendChild(cell);
+    }
+    for (let c = 0; c < BATCH_COLS; c++) {
+      const cell = row.children[c];
+      const sprite = batchSprites[idx++];
+      blitToCanvas(sprite, cell.querySelector('canvas'), zoom);
+      cell.querySelector('.cell-label').textContent = sprite.archetype;
+    }
+  }
+}
+
+function updateInfo() {
+  const sprite = singleSprite;
+  elArchResult.textContent = sprite ? sprite.archetype : '—';
+  elSizeResult.textContent = sprite
+    ? `${sprite.canvas.width}×${sprite.canvas.height}px`
+    : '—';
+}
+
+// ---- Decor UI toggling ----
+function updateDecorUI() {
+  const type = elType.value;
+  const isDecor = DECOR_TYPES.has(type);
+
+  if (isDecor) {
+    elArchGroup.classList.remove('hidden');
+    elColorGroup.classList.remove('hidden');
+
+    // Repopulate archetype select
+    const archetypes = DECOR_ARCHETYPES[type];
+    const current = elArchSel.value;
+    elArchSel.innerHTML = '';
+    archetypes.forEach(a => {
+      const opt = document.createElement('option');
+      opt.value = a;
+      opt.textContent = a;
+      elArchSel.appendChild(opt);
+    });
+    // Keep current selection if valid, else default to 'auto'
+    elArchSel.value = archetypes.includes(current) ? current : 'auto';
+  } else {
+    elArchGroup.classList.add('hidden');
+    elColorGroup.classList.add('hidden');
+  }
+}
+
+function updateColorPickerVisibility() {
+  elColorRow.style.display = elColorCheck.checked ? 'flex' : 'none';
+}
+
+// ---- Event wiring ----
+elType.addEventListener('change', () => {
+  updateDecorUI();
+  generate();
+});
+
+elSeed.addEventListener('change', generate);
+elSeed.addEventListener('blur', generate);
+elSeed.addEventListener('keydown', e => { if (e.key === 'Enter') generate(); });
+
+document.getElementById('btn-random').addEventListener('click', () => {
+  elSeed.value = String((Math.random() * 0xFFFFFFFF) >>> 0);
+  generate();
+});
+
+document.getElementById('btn-prev').addEventListener('click', () => {
+  const v = getSeed();
+  elSeed.value = String(v === 0 ? 0xFFFFFFFF : v - 1);
+  generate();
+});
+
+document.getElementById('btn-next').addEventListener('click', () => {
+  const v = getSeed();
+  elSeed.value = String((v + 1) >>> 0);
+  generate();
+});
+
+elSize.addEventListener('input', () => {
+  elSizeVal.textContent = elSize.value;
+  generate();
+});
+
+elZoom.addEventListener('input', () => {
+  elZoomVal.textContent = elZoom.value + '×';
+  render(getZoom());
+});
+
+elArchSel.addEventListener('change', generate);
+
+elColorCheck.addEventListener('change', () => {
+  updateColorPickerVisibility();
+  generate();
+});
+
+elBaseColor.addEventListener('input', () => {
+  if (elColorCheck.checked) generate();
+});
+
+elShowBatch.addEventListener('change', () => {
+  render(getZoom());
+});
+
+// ---- Export helpers ----
+async function spriteToPngBlob(sprite) {
+  return sprite._oc.convertToBlob({ type: 'image/png' });
+}
+
+function triggerDownload(url, filename) {
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  // Delay revocation to ensure the browser has started the download
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+elBtnExport.addEventListener('click', async () => {
+  if (!singleSprite) return;
+  const blob = await spriteToPngBlob(singleSprite);
+  const url = URL.createObjectURL(blob);
+  const type = elType.value;
+  triggerDownload(url, `${type}_${getSeed()}.png`);
+});
+
+elBtnExportZ.addEventListener('click', async () => {
+  const type = elType.value;
+  const seed = getSeed();
+  const zip = new JSZip();
+  await Promise.all(batchSprites.map((sprite, i) => {
+    const nr = String(i + 1).padStart(2, '0');
+    return spriteToPngBlob(sprite).then(blob => zip.file(`${type}_${nr}.png`, blob));
+  }));
+  const blob = await zip.generateAsync({ type: 'blob' });
+  const url = URL.createObjectURL(blob);
+  triggerDownload(url, `${type}_batch_${seed}.zip`);
+});
+
+// ---- Init ----
+updateDecorUI();
+updateColorPickerVisibility();
+generate();
+</script>
+
+</body>
+</html>
