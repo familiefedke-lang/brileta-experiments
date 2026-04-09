@@ -232,6 +232,25 @@
   <div class="grid" id="weaponeffects"></div>
 </div>
 
+<div class="section">
+  <h2>Crystals</h2>
+  <div class="grid" id="crystals"></div>
+</div>
+
+<div class="section">
+  <h2>Potions</h2>
+  <div class="grid" id="potions"></div>
+</div>
+
+<div class="section">
+  <h2>Ruins</h2>
+  <div class="grid" id="ruins"></div>
+</div>
+
+<p style="margin-top:1rem;font-size:0.85rem;color:#555;">
+  <a href="editor.html" style="color:#555;border-bottom:1px solid #999;text-decoration:none;">Open Custom Editor →</a>
+</p>
+
 <script type="module">
 import { Rng } from '../dist/rng.js';
 import { generateTree } from '../dist/trees.js';
@@ -256,6 +275,11 @@ import { generateSteelStructure } from '../dist/steelstructures.js';
 import { generateProductionMachinery } from '../dist/productionmachinery.js';
 import { generateStatusEffect } from '../dist/statuseffects.js';
 import { generateWeaponEffect } from '../dist/weaponeffects.js';
+import {
+  generateCrystal,
+  generatePotion,
+  generateRuins,
+} from '../dist/decor.js';
 
 const SPRITE_TYPES = [
   { salt: 0,  count: 30, name: 'tree',         gen: generateTree,          grid: document.getElementById('trees') },
@@ -276,6 +300,9 @@ const SPRITE_TYPES = [
   { salt: 15, count: 20, name: 'productionmachinery',  gen: generateProductionMachinery,  grid: document.getElementById('productionmachinery') },
   { salt: 16, count: 20, name: 'statuseffect',         gen: generateStatusEffect,         grid: document.getElementById('statuseffects') },
   { salt: 17, count: 20, name: 'weaponeffect',         gen: generateWeaponEffect,         grid: document.getElementById('weaponeffects') },
+  { salt: 18, count: 24, name: 'crystal',              gen: generateCrystal,              grid: document.getElementById('crystals') },
+  { salt: 19, count: 24, name: 'potion',               gen: generatePotion,               grid: document.getElementById('potions') },
+  { salt: 20, count: 24, name: 'ruins',                gen: generateRuins,                grid: document.getElementById('ruins') },
 ];
 
 const seedInput = document.getElementById('seed');
